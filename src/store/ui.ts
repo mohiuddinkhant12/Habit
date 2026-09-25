@@ -14,7 +14,10 @@ export type Sheet =
 export type Dialog =
   | { k: 'archive'; id: string }
   | { k: 'delete'; id: string }
-  | { k: 'restore'; file: string; uri: string };
+  | { k: 'restore'; file: string; uri: string }
+  | { k: 'signout' }
+  | { k: 'deleteCloud' }
+  | { k: 'erase' };
 
 export interface Snack {
   msg: string;

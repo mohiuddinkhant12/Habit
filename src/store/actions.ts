@@ -41,8 +41,9 @@ function change(
   const cur = d.log[id]?.[date];
   const next = mutate(cur ? { ...cur } : undefined, h);
   const days = { ...(d.log[id] ?? {}) };
-  if (next && (next.v || next.skip || next.slip || next.note)) days[date] = { ...next, t: h.target, at: next.v > (cur?.v ?? 0) ? Date.now() : cur?.at };
-  else delete days[date];
+  // Cleared days keep an empty, timestamped entry so a sync can't resurrect the old value.
+  if (next && (next.v || next.skip || next.slip || next.note)) days[date] = { ...next, t: h.target, at: next.v > (cur?.v ?? 0) ? Date.now() : cur?.at, u: Date.now() };
+  else if (cur) days[date] = { v: 0, u: Date.now() };
   const log: Log = { ...d.log, [id]: days };
 
   const after = isDoneOn(h, log, date, today);
@@ -63,7 +64,18 @@ function change(
 }
 
 export function undo(snap: Pick<Data, 'habits' | 'log' | 'xp'>) {
-  useData.getState().commit('undo', null, () => snap);
+  const now = Date.now();
+  useData.getState().commit('undo', null, (d) => {
+    // Undoing a delete must also lift its tombstone, and restored rows count as fresh edits for sync.
+    const deleted = Object.fromEntries(Object.entries(d.deleted).filter(([id]) => !snap.habits.some((h) => h.id === id)));
+    const log: Log = {};
+    for (const id of new Set([...Object.keys(snap.log), ...Object.keys(d.log)])) {
+      const days = { ...(snap.log[id] ?? {}) };
+      for (const k of Object.keys(d.log[id] ?? {})) days[k] = { ...(days[k] ?? { v: 0 }), u: now };
+      log[id] = days;
+    }
+    return { ...snap, log, habits: snap.habits.map((h) => ({ ...h, updatedAt: now })), deleted };
+  });
   useUI.getState().clearSnack();
 }
 
@@ -116,8 +128,8 @@ export function setNote(id: string, date: DateKey, text: string) {
   const d = getData();
   const cur = d.log[id]?.[date];
   const days = { ...(d.log[id] ?? {}) };
-  if (text) days[date] = { ...(cur ?? { v: 0 }), note: text };
-  else if (cur) days[date] = { ...cur, note: undefined };
+  if (text) days[date] = { ...(cur ?? { v: 0 }), note: text, u: Date.now() };
+  else if (cur) days[date] = { ...cur, note: undefined, u: Date.now() };
   useData.getState().commit('note', { id, date, text }, () => ({ log: { ...d.log, [id]: days } }));
 }
 
@@ -135,7 +147,7 @@ export function dismissRecovery() {
 
 function patchHabit(id: string, op: string, fn: (h: Habit) => Habit) {
   const d = getData();
-  useData.getState().commit(op, { id }, () => ({ habits: d.habits.map((h) => (h.id === id ? fn(h) : h)) }));
+  useData.getState().commit(op, { id }, () => ({ habits: d.habits.map((h) => (h.id === id ? { ...fn(h), updatedAt: Date.now() } : h)) }));
 }
 
 export function togglePause(id: string) {
@@ -176,6 +188,7 @@ export function deleteHabit(id: string) {
   const snap = { habits: d.habits, log: d.log, xp: d.xp };
   const { [id]: _gone, ...log } = d.log;
   useData.getState().commit('delete', { id }, (s) => ({
+    deleted: { ...s.deleted, [id]: Date.now() },
     habits: s.habits.filter((x) => x.id !== id).map((x) => (x.stackAfter === id ? { ...x, stackAfter: null } : x)),
     log,
     routines: s.routines.map((r) => ({ ...r, steps: r.steps.filter((x) => x !== id) })),
@@ -247,7 +260,7 @@ export function saveForm(f: HabitForm): string | null {
   const s = scheduleOf(f);
   if (f.mode === 'create') {
     const h: Habit = { ...base, id: uid(), schedules: [{ from: today, s }], est: f.type === 'dur' ? target : 5, paused: false, pauses: [], archived: false, createdAt: today };
-    useData.getState().commit('create', { id: h.id }, (d) => ({ habits: [...d.habits, h] }));
+    useData.getState().commit('create', { id: h.id }, (d) => ({ habits: [...d.habits, { ...h, updatedAt: Date.now() }] }));
     useUI.getState().toast(h.name + ' added to ' + h.time);
     return h.id;
   }

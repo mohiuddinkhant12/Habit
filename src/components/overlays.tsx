@@ -8,6 +8,7 @@ import { fmtNum, short } from '@/domain/goals';
 import { DOW, shortD, weekdayOf, addDays } from '@/domain/dates';
 import { dayStat, statusOn } from '@/domain/status';
 import { restore as doRestore, listBackups, pickFile, readBackup, share, type BackupFile } from '@/services/backup';
+import { eraseThisPhone, removeCloudCopy, signOutGoogle } from '@/services/account';
 import { archive, deleteHabit, increment, setNote, skip, togglePause, undo } from '@/store/actions';
 import { useData } from '@/store/data';
 import { useHabitSets, useStreakOpts, useToday } from '@/store/hooks';
@@ -305,7 +306,23 @@ export function DialogHost() {
   let cta = '';
   let go = () => {};
   let alt: { label: string; go: () => void } | null = null;
-  if (d && d.k !== 'restore') {
+  if (d?.k === 'signout') {
+    title = 'Sign out of Google?';
+    body = 'Everything stays on this phone and keeps working offline. Your Drive copy stays too — sign in again any time to pick up where you left off.';
+    cta = 'Sign out';
+    go = () => signOutGoogle();
+    alt = { label: 'Sign out and remove HabitFlow’s access', go: () => signOutGoogle(true) };
+  } else if (d?.k === 'deleteCloud') {
+    title = 'Delete the Drive copy?';
+    body = 'This removes HabitFlow’s file from your Google Drive. Everything on this phone stays exactly as it is.';
+    cta = 'Delete copy';
+    go = () => removeCloudCopy();
+  } else if (d?.k === 'erase') {
+    title = 'Erase everything on this phone?';
+    body = 'All habits, history, notes and your profile are removed from this phone and you’re signed out. A Drive copy, if you have one, is kept — sign in again to bring it back.';
+    cta = 'Erase';
+    go = () => eraseThisPhone();
+  } else if (d && d.k !== 'restore') {
     const h = habits.find((x) => x.id === d.id);
     if (h) {
       const n = Object.keys(log[h.id] ?? {}).filter((k) => statusOn(h, log, k, today) === 'd').length;

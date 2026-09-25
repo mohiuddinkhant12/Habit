@@ -3,7 +3,8 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
 import { uid } from '@/domain/factory';
-import type { DateKey, Goal, Habit, Log, Op, Review, Routine, RoutineRun, Settings, TimerSession } from '@/domain/types';
+import { EMPTY_PROFILE } from '@/domain/merge';
+import type { DateKey, Goal, Habit, Log, Op, Profile, Review, Routine, RoutineRun, Settings, SyncState, TimerSession } from '@/domain/types';
 
 export const DATA_VERSION = 1;
 
@@ -45,12 +46,18 @@ export interface Data {
   timer: TimerSession | null;
   recoveryDismissed: DateKey | null;
   lastBackup: number | null;
+  profile: Profile;
+  sync: SyncState;
+  /** Deleted habit ids → when, so a sync never brings a deleted habit back. */
+  deleted: Record<string, number>;
   /**
    * Append-only operation log. Every write lands here too, so a future sync
    * layer can replay local changes without the screens changing.
    */
   ops: Op[];
 }
+
+export const EMPTY_SYNC: SyncState = { autoSync: true, lastSyncAt: null, lastError: null, fileId: null };
 
 export const EMPTY: Data = {
   version: DATA_VERSION,
@@ -66,6 +73,9 @@ export const EMPTY: Data = {
   timer: null,
   recoveryDismissed: null,
   lastBackup: null,
+  profile: EMPTY_PROFILE,
+  sync: EMPTY_SYNC,
+  deleted: {},
   ops: [],
 };
 
@@ -96,7 +106,13 @@ export const useData = create<Store>()(
       partialize: ({ commit, replace, ...data }) => data,
       merge: (persisted, current) => {
         const p = (persisted ?? {}) as Partial<Data>;
-        return { ...current, ...p, settings: { ...DEFAULT_SETTINGS, ...(p.settings ?? {}) } };
+        return {
+          ...current,
+          ...p,
+          settings: { ...DEFAULT_SETTINGS, ...(p.settings ?? {}) },
+          profile: { ...EMPTY_PROFILE, ...(p.profile ?? {}) },
+          sync: { ...EMPTY_SYNC, ...(p.sync ?? {}) },
+        };
       },
     },
   ),

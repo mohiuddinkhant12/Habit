@@ -35,6 +35,8 @@ export interface Habit {
   pauses: { from: DateKey; to: DateKey | null }[];
   archived: boolean;
   createdAt: DateKey;
+  /** Last edit (ms) — lets sync pick the newer copy of a habit. */
+  updatedAt?: number;
 }
 
 /** One habit on one day. */
@@ -45,6 +47,7 @@ export interface Entry {
   slip?: boolean;
   note?: string;
   at?: number; // epoch ms of the last check-in, for smart reminders
+  u?: number; // epoch ms of the last change, for sync conflict resolution
 }
 
 export type Log = Record<string, Record<DateKey, Entry>>;
@@ -122,4 +125,23 @@ export interface Op {
   ts: number;
   op: string;
   payload: unknown;
+}
+
+export type Gender = 'Woman' | 'Man' | 'Non-binary' | 'Prefer not to say';
+
+export interface Profile {
+  name: string;
+  age: number | null;
+  gender: Gender | null;
+  /** Google account used only to keep a copy of progress in Drive. */
+  email: string | null;
+  photo: string | null;
+  updatedAt: number;
+}
+
+export interface SyncState {
+  autoSync: boolean;
+  lastSyncAt: number | null;
+  lastError: string | null;
+  fileId: string | null;
 }

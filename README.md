@@ -67,6 +67,34 @@ src/
 - **Milestone screen:** has no "Save card" button (it would need an image-export dependency). "+100 XP · Achievement unlocked" appears, and is actually awarded, only the first time a 30-day streak is reached.
 - **The prototype's frame:** the journeys sidebar and the side-by-side home-screen phone were demo scaffolding. The widgets and notification are real Android features instead.
 
+## Profile and Google Drive sync
+
+**You → Profile & sync** holds your name, age, gender and a few stats. Signing in with Google is optional. It exists only to keep a copy of your progress in your own Google Drive:
+
+- HabitFlow asks for the `drive.appdata` scope only. That's a private, hidden app folder in your Drive; the app can't see your other files, email or contacts.
+- Sync **merges** rather than overwrites. Check-ins, habits, routines, goals and reviews from both sides are combined, and when the same thing changed on both, the newer edit wins. Deleted habits stay deleted.
+- It runs on launch, when you leave the app, and about 20 seconds after a change. You can turn auto-sync off or press **Sync now**. With no connection the app works exactly as before and syncs later.
+- Signing out keeps everything on the phone. **Delete Drive copy** and **Erase this phone** are separate, confirmed actions.
+
+### One-time Google setup (needed before sign-in works)
+
+Google only lets a signed app use sign-in when it's registered, so this part has to be done in your Google account:
+
+1. Go to https://console.cloud.google.com and create a project (e.g. *HabitFlow*).
+2. **APIs & Services → Library** → enable **Google Drive API**.
+3. **Google Auth Platform → Branding / OAuth consent screen**: choose *External*, then enter an app name and your email.
+   - Under **Data access**, add the scope `.../auth/drive.appdata`.
+   - Under **Audience**, add your Gmail address as a **test user**. While the app is in *Testing*, only test users can sign in.
+4. Get your app's signing fingerprint by running `npx eas-cli@latest credentials -p android`, choosing the profile you build with (e.g. `preview`), and copying the **SHA-1**.
+5. **Credentials → Create credentials → OAuth client ID → Android**:
+   - Package name: `app.habitflow`
+   - SHA-1: the value from step 4
+
+   If you build with more than one keystore, add one Android client per SHA-1.
+6. Rebuild the APK. No code or config change is needed, because Google matches the app by package name and SHA-1.
+
+If sign-in shows **DEVELOPER_ERROR**, the SHA-1 or package name in step 5 doesn't match the installed build.
+
 ## Offline-first and future sync
 
 Every write goes through `useData.commit(op, payload, fn)`, which also appends to `ops`, an append-only operation log capped at 2,000 entries. A future sync layer can replay it without any screen changing. Backups (`.hfbak`) and exports (JSON/CSV) are written to the app's documents folder. Restoring takes a backup of the current data first and refuses files written by a newer app version.

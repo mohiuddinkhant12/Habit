@@ -2,6 +2,7 @@ import { useRouter, type Href } from 'expo-router';
 import { useMemo } from 'react';
 import { Pressable, View } from 'react-native';
 
+import { Avatar } from '@/components/Avatar';
 import { Icon } from '@/components/Icon';
 import { Bar, Card, Note, Page, Row, Txt } from '@/components/ui';
 import { XP_PER_LEVEL } from '@/domain/catalog';
@@ -38,6 +39,7 @@ export default function YouScreen() {
 
   const archived = d.habits.filter((h) => h.archived).length;
   const rows: [string, string, string, Href][] = [
+    ['Profile & sync', d.profile.email ? 'Name, age, Google Drive sync' : 'Name, age · sign in to sync to Drive', 'user', '/profile'],
     ['Daily review', 'Reflect on today', 'notebook', '/review'],
     ['Appearance', 'Theme, accent, density, layout', 'palette', '/settings/appearance'],
     ['Reminders', 'Times, quiet hours, actions', 'bell', '/settings/reminders'],
@@ -49,15 +51,14 @@ export default function YouScreen() {
   return (
     <Page>
       <View style={{ paddingTop: 14, paddingHorizontal: 20, paddingBottom: 16, gap: 12 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
-          <View style={{ width: 52, height: 52, borderRadius: 26, backgroundColor: p.act, alignItems: 'center', justifyContent: 'center', boxShadow: `inset 0px 0px 0px 1px ${p.ac}` }}>
-            <Icon name="user" size={24} color={p.acx} />
-          </View>
+        <Pressable accessibilityRole="button" accessibilityLabel="Open profile" onPress={() => router.push('/profile')} style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+          <Avatar size={52} />
           <View style={{ flex: 1, gap: 2 }}>
-            <Txt size={24} w={500} ls={-0.025} accessibilityRole="header">You</Txt>
-            <Txt size={12} color={p.mu}>No account · this phone only</Txt>
+            <Txt size={24} w={500} ls={-0.025} accessibilityRole="header" numberOfLines={1}>{d.profile.name || 'You'}</Txt>
+            <Txt size={12} color={p.mu} numberOfLines={1}>{d.profile.email ? `${d.profile.email} · ${d.sync.lastError ? 'sync paused' : 'synced to Drive'}` : 'No account · this phone only'}</Txt>
           </View>
-        </View>
+          <Icon name="caret-right" size={15} color={p.mu} />
+        </Pressable>
         {d.settings.xpOn && (
           <View style={{ gap: 6, paddingVertical: 12, paddingHorizontal: 14, borderWidth: 1, borderColor: p.ln2, borderRadius: 8 }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' }}>

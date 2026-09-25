@@ -1,3 +1,4 @@
+import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Platform, Pressable, View } from 'react-native';
 
@@ -5,6 +6,7 @@ import { Segments } from '@/components/charts';
 import { Icon } from '@/components/Icon';
 import { AppBar, Btn, Label, Legend, Page, Rule, Seg, Swatch, Switch, Txt } from '@/components/ui';
 import { fmtNum } from '@/domain/goals';
+import { runSync } from '@/services/account';
 import { backupNow, exportData } from '@/services/backup';
 import { setSettings } from '@/store/actions';
 import { useData } from '@/store/data';
@@ -16,6 +18,8 @@ export default function DataScreen() {
   const d = useData();
   const s = d.settings;
   const [busy, setBusy] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const router = useRouter();
 
   const checkins = Object.values(d.log).reduce((a, days) => a + Object.values(days).filter((e) => e.v > 0).length, 0);
   const notes = Object.values(d.log).reduce((a, days) => a + Object.values(days).filter((e) => e.note).length, 0) + Object.keys(d.reviews).length;
@@ -99,19 +103,32 @@ export default function DataScreen() {
         </View>
       </Pressable>
 
-      <View style={{ marginTop: 16, marginHorizontal: 20, marginBottom: 24, padding: 14, borderWidth: 1, borderStyle: 'dashed', borderColor: p.ln2, borderRadius: 8, gap: 8 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-          <Icon name="cloud-slash" size={15} color={p.tx} />
-          <Txt size={13} w={500}>Sync across devices — later</Txt>
+      <Rule />
+      <View style={{ padding: 16, paddingHorizontal: 20, gap: 10 }}>
+        <Label>Sync to cloud</Label>
+        <View style={{ padding: 14, borderWidth: 1, borderStyle: d.profile.email ? 'solid' : 'dashed', borderColor: p.ln2, borderRadius: 8, gap: 10 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <Icon name={d.profile.email ? (d.sync.lastError ? 'warning' : 'check') : 'cloud-slash'} size={15} color={d.profile.email && !d.sync.lastError ? p.ac : p.tx} />
+            <Txt size={13} w={500} style={{ flex: 1 }}>{d.profile.email ? 'Google Drive sync is on' : 'Google Drive sync is off'}</Txt>
+          </View>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+            <View style={{ paddingVertical: 4, paddingHorizontal: 8, borderRadius: 14, backgroundColor: p.act }}><Txt size={11} w={500} color={p.acx}>This phone</Txt></View>
+            <Icon name="arrow-right" size={12} color={d.profile.email ? p.ac : p.fa} />
+            <View style={{ paddingVertical: 4, paddingHorizontal: 8, borderRadius: 14, borderWidth: 1, borderStyle: d.profile.email ? 'solid' : 'dashed', borderColor: d.profile.email ? p.ac : p.ln2 }}>
+              <Txt size={11} w={500} color={d.profile.email ? p.acx : p.mu}>{d.profile.email ?? 'Your Google Drive'}</Txt>
+            </View>
+          </View>
+          <Txt size={11.5} lh={1.5} color={p.mu}>
+            {d.profile.email
+              ? d.sync.lastError ?? `Last synced ${d.sync.lastSyncAt ? new Date(d.sync.lastSyncAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }) : 'not yet'}. Progress is merged, never overwritten — this phone keeps working offline.`
+              : 'Optional. Sign in with Google to keep a private copy of your progress in your own Drive. Only your HabitFlow data is stored there.'}
+          </Txt>
+          {d.profile.email ? (
+            <Btn variant="primary" label={syncing ? 'Syncing…' : 'Sync now'} icon="arrow-counter-clockwise" disabled={syncing} onPress={async () => { setSyncing(true); await runSync(); setSyncing(false); }} />
+          ) : (
+            <Btn variant="primary" label="Set up in Profile" icon="arrow-right" onPress={() => router.push('/profile')} />
+          )}
         </View>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-          <View style={{ paddingVertical: 4, paddingHorizontal: 8, borderRadius: 14, backgroundColor: p.act }}><Txt size={11} w={500} color={p.acx}>This phone</Txt></View>
-          <Icon name="arrow-right" size={12} color={p.tx} />
-          <View style={{ paddingVertical: 4, paddingHorizontal: 8, borderRadius: 14, borderWidth: 1, borderStyle: 'dashed', borderColor: p.ln2 }}><Txt size={11} w={500} color={p.mu}>Sync layer</Txt></View>
-          <Icon name="arrow-right" size={12} color={p.fa} />
-          <View style={{ paddingVertical: 4, paddingHorizontal: 8, borderRadius: 14, borderWidth: 1, borderStyle: 'dashed', borderColor: p.ln2 }}><Txt size={11} w={500} color={p.mu}>Cloud</Txt></View>
-        </View>
-        <Txt size={11.5} lh={1.5} color={p.mu}>When it arrives it will be opt-in. Nothing leaves this device until you turn it on. Every change is already kept in a local operation log ({fmtNum(d.ops.length)} so far), ready for it.</Txt>
       </View>
     </Page>
   );
