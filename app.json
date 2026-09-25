@@ -1,0 +1,105 @@
+{
+  "expo": {
+    "name": "HabitFlow",
+    "slug": "habitflow",
+    "scheme": "habitflow",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "backgroundColor": "#161826",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "app.habitflow"
+    },
+    "android": {
+      "package": "app.habitflow",
+      "adaptiveIcon": {
+        "backgroundColor": "#161826",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": true
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "output": "single"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      "expo-sharing",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 120,
+          "backgroundColor": "#161826"
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#9184d9"
+        }
+      ],
+      [
+        "react-native-android-widget",
+        {
+          "fonts": [
+            "./node_modules/@expo-google-fonts/inter/300Light/Inter_300Light.ttf",
+            "./node_modules/@expo-google-fonts/inter/500Medium/Inter_500Medium.ttf"
+          ],
+          "widgets": [
+            {
+              "name": "Today",
+              "label": "HabitFlow · Today",
+              "description": "What's still open today, with one-tap logging",
+              "minWidth": "250dp",
+              "minHeight": "180dp",
+              "targetCellWidth": 4,
+              "targetCellHeight": 3,
+              "resizeMode": "horizontal|vertical",
+              "updatePeriodMillis": 1800000
+            },
+            {
+              "name": "Progress",
+              "label": "HabitFlow · Progress",
+              "description": "Today's completion",
+              "minWidth": "110dp",
+              "minHeight": "110dp",
+              "targetCellWidth": 2,
+              "targetCellHeight": 2,
+              "updatePeriodMillis": 1800000
+            },
+            {
+              "name": "Streaks",
+              "label": "HabitFlow · Streaks",
+              "description": "Your two longest runs",
+              "minWidth": "110dp",
+              "minHeight": "110dp",
+              "targetCellWidth": 2,
+              "targetCellHeight": 2,
+              "updatePeriodMillis": 1800000
+            },
+            {
+              "name": "QuickAdd",
+              "label": "HabitFlow · Quick add",
+              "description": "Add to amount habits without opening the app",
+              "minWidth": "250dp",
+              "minHeight": "60dp",
+              "targetCellWidth": 4,
+              "targetCellHeight": 1,
+              "resizeMode": "horizontal",
+              "updatePeriodMillis": 1800000
+            }
+          ]
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
